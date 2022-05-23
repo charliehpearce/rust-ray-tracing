@@ -1,6 +1,8 @@
+use std::f64::INFINITY;
+
+use crate::hittables::hit::{Hittable};
 pub use crate::vec3::{Vec3, Point3, Colour};
 pub use crate::utils::{dot, unit_vector};
-
 
 #[derive(Clone, Copy)]
 pub struct Ray{
@@ -26,12 +28,9 @@ impl Ray {
         return self.origin + self.dir*t
     }
 
-    pub fn ray_colour(&self)->Colour{
-        let t:f64 = hit_sphere(Point3::new(0.0,0.0,-1.0), 0.5, *self); 
-        
-        if t > 0.0  {
-            let n:Vec3 = unit_vector(self.at(t) - Vec3::new(0.0,0.0,-1.0));
-            return Colour::new(n.x()+1.0,n.y()+1.0,n.z()+1.0)*0.5
+    pub fn ray_colour<T:Hittable> (&self, world:&T) -> Colour {
+        if let Some(rec) = world.hit(*self, 0.0, INFINITY) {
+            return (rec.normal+Colour::new(1.0, 1.0, 1.0)) * 0.5
         }
             let unit_direction = unit_vector(self.direction());
             let t = 0.5*(unit_direction.y()+1.0);

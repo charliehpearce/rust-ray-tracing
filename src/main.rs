@@ -1,14 +1,18 @@
 mod vec3;
 mod ray;
 mod utils;
+mod hittables;
 
 pub use crate::vec3::{Vec3,Colour,Point3};
 pub use crate::ray::Ray;
+pub use crate::hittables::sphere::Sphere;
+pub use crate::hittables::hit::HittableList;
 
 use image::{ImageBuffer, Rgb, RgbImage};
 
 fn main() {
-    // Set up image
+    
+    // Set up Image
     const ASPECT_RATIO:f64 = 16.0/9.0;
     const IMAGE_WIDTH:u32 = 2000;
     const IMAGE_HEIGHT:u32 = (IMAGE_WIDTH as f64/ ASPECT_RATIO) as u32;
@@ -22,6 +26,11 @@ fn main() {
     let horizontal:Vec3 = Vec3::new(VIEWPORT_WIDTH, 0.0, 0.0);
     let veritcal: Vec3 = Vec3::new(0.0, VIEWPORT_HEIGHT, 0.0);
     let lower_left_corner = ORIGIN - horizontal/2.0 - veritcal/2.0 - Vec3::new(0.0,0.0,FOCAL_LENGTH);
+
+    // World
+    let mut world: HittableList = HittableList::new();
+    world.add(Sphere::new(Vec3::new(0.0,0.0,-1.0), 0.5));
+    world.add(Sphere::new(Vec3::new(0.0,-105.0,-1.0), 100.0));
     
     // Render
 
@@ -29,19 +38,12 @@ fn main() {
 
     for (x,y,pixel) in buffer.enumerate_pixels_mut() {
 
-        // let r = x as f64 / (IMAGE_WIDTH-1) as f64;
-        // let g = y as f64 / (IMAGE_WIDTH-1) as f64;
-        // let b = 0.25;
-
-        // let ir = (255.999 * r) as u8;
-        // let ig = (255.999 * g) as u8;
-        // let ib = (255.999 * b) as u8;
-
         let v = y as f64 / (IMAGE_HEIGHT as f64 +1.0);
         let u = x as f64 / (IMAGE_WIDTH as f64+1.0);
         let direction:Vec3 = lower_left_corner + horizontal*u + veritcal*v;
         let ray:Ray = Ray::new(ORIGIN, direction);
-        let ray_colour:Colour = ray.ray_colour();
+        
+        let ray_colour:Colour = ray.ray_colour(&world);
 
         let ir = (ray_colour.x() * 255.999) as u8;
         let ig = (ray_colour.y() * 255.999) as u8;
