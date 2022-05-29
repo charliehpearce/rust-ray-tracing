@@ -1,4 +1,3 @@
-use nalgebra::Point;
 use crate::hit::{Hitable,World};
 
 use crate::vec3::{Vec3,Point3, Colour, random_in_unit_sphere};

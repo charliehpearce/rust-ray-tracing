@@ -4,11 +4,12 @@ mod hit;
 mod hittables;
 mod camera;
 mod utils;
+mod material;
 
 use image::{ImageBuffer, Rgb, RgbImage};
 use indicatif::ProgressBar;
-use vec3::{Colour,Vec3,Point3};
-use ray::{Ray, ray_color};
+use vec3::{Colour,Point3};
+use ray::{ray_color};
 use hittables::sphere::Sphere;
 use hit::World;
 use camera::Camera;
@@ -20,9 +21,9 @@ fn main() {
     
     // Set up image
     const ASPECT_RATIO: f64 = 16.0 / 9.0;
-    const IMAGE_WIDTH:u32 = 500;
+    const IMAGE_WIDTH:u32 = 1000;
     const IMAGE_HEIGHT:u32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as u32;
-    const SAMPLES_PER_PIXEL:f64 = 50.0;
+    const SAMPLES_PER_PIXEL:f64 = 75.0;
 
     // Camera
     let camera = Camera::new();
@@ -35,7 +36,7 @@ fn main() {
     // Render
     let mut img: RgbImage = ImageBuffer::new(IMAGE_WIDTH, IMAGE_HEIGHT);
     let pb = ProgressBar::new(img.len().try_into().unwrap());
-    const MAX_DEPTH:i32 = 10;
+    const MAX_DEPTH:i32 = 25;
 
     for (x,y,pixel) in img.enumerate_pixels_mut() {
 
@@ -60,9 +61,9 @@ fn main() {
         let mut b = pixel_colour.z as f64; 
 
         let scale = 1.0 / SAMPLES_PER_PIXEL;
-        r *= scale;
-        g *= scale;
-        b *= scale;
+        r = (r*scale).sqrt();
+        g = (g*scale).sqrt();
+        b = (b*scale).sqrt();
 
         let ir = (255.999 * clamp(r, 0.0, 0.999)) as u8;
         let ig  = (255.999 * clamp(g as f64, 0.0, 0.999)) as u8;

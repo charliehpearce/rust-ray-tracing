@@ -1,11 +1,13 @@
 use crate::vec3::{Point3, Vec3};
 use crate::ray::Ray;
+use crate::material::Material;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct HitRecord {
     p: Point3,
     normal: Vec3,
-    t: f64
+    t: f64,
+    // material:T
 }
 
 impl HitRecord {
@@ -13,9 +15,9 @@ impl HitRecord {
         return HitRecord{p:p, normal:normal, t:t}
     }
 
-    pub fn t(&self) -> f64 {
-        return self.t
-    }
+    // pub fn t(&self) -> f64 {
+    //     return self.t
+    // }
 
     pub fn normal(&self) -> Vec3 {
         return self.normal
@@ -47,9 +49,9 @@ impl HitableList {
     pub fn new() -> HitableList {
         return HitableList{objects:Vec::new()}
     }
-    pub fn clear(&mut self) -> (){
-        self.objects.clear()
-    }
+    // pub fn clear(&mut self) -> (){
+    //     self.objects.clear()
+    // }
 
     pub fn add<T:Hitable + 'static>(&mut self, object:T) -> () {
         self.objects.push(Box::new(object))
@@ -62,7 +64,7 @@ impl Hitable for HitableList {
         let mut closest_so_far = t_max;
 
         for obj in self.objects.iter() {
-            if let Some(hit_record) = obj.hit(ray, t_min, t_max) {
+            if let Some(hit_record) = obj.hit(ray, t_min, closest_so_far) {
                 hit_anything = Some(hit_record);
                 closest_so_far = hit_record.t;
             };

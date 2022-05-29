@@ -7,10 +7,10 @@ pub type Vec3 = Vector3<f64>;
 pub type Point3 = Vec3;
 pub type Colour = Vec3;
 
-fn random_vec3() -> Vec3 {
-    let mut rng = thread_rng();
-    return Vec3::new(rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0))
-}
+// fn random_vec3() -> Vec3 {
+//     let mut rng = thread_rng();
+//     return Vec3::new(rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0))
+// }
 
 fn random_rng_vec3(range:Range<f64>) -> Vec3 {
     let mut rng = thread_rng();
