@@ -1,57 +1,75 @@
 mod vec3;
 mod ray;
-mod utils;
+mod hit;
 mod hittables;
-
-pub use crate::vec3::{Vec3,Colour,Point3};
-pub use crate::ray::Ray;
-pub use crate::hittables::sphere::Sphere;
-pub use crate::hittables::hit::HittableList;
+mod camera;
+mod utils;
 
 use image::{ImageBuffer, Rgb, RgbImage};
+use indicatif::ProgressBar;
+use vec3::{Colour,Vec3,Point3};
+use ray::{Ray, ray_color};
+use hittables::sphere::Sphere;
+use hit::World;
+use camera::Camera;
+use utils::clamp;
+use rand::{thread_rng, Rng};
 
 fn main() {
+    let mut rng = thread_rng();
     
-    // Set up Image
-    const ASPECT_RATIO:f64 = 16.0/9.0;
-    const IMAGE_WIDTH:u32 = 2000;
-    const IMAGE_HEIGHT:u32 = (IMAGE_WIDTH as f64/ ASPECT_RATIO) as u32;
+    // Set up image
+    const ASPECT_RATIO: f64 = 16.0 / 9.0;
+    const IMAGE_WIDTH:u32 = 500;
+    const IMAGE_HEIGHT:u32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as u32;
+    const SAMPLES_PER_PIXEL:f64 = 50.0;
 
     // Camera
-    const VIEWPORT_HEIGHT:f64 = 2.0;
-    const VIEWPORT_WIDTH:f64 = ASPECT_RATIO*VIEWPORT_HEIGHT;
-    const FOCAL_LENGTH: f64 = 1.0;
-    
-    let ORIGIN:Point3 = Point3::new(0.0,0.0,0.0);
-    let horizontal:Vec3 = Vec3::new(VIEWPORT_WIDTH, 0.0, 0.0);
-    let veritcal: Vec3 = Vec3::new(0.0, VIEWPORT_HEIGHT, 0.0);
-    let lower_left_corner = ORIGIN - horizontal/2.0 - veritcal/2.0 - Vec3::new(0.0,0.0,FOCAL_LENGTH);
+    let camera = Camera::new();
 
     // World
-    let mut world: HittableList = HittableList::new();
-    world.add(Sphere::new(Vec3::new(0.0,0.0,-1.0), 0.5));
-    world.add(Sphere::new(Vec3::new(0.0,-105.0,-1.0), 100.0));
-    
+    let mut world = World::new();
+    world.add(Sphere::new(Point3::new(0.0,-100.5,-1.0), 100.0));
+    world.add(Sphere::new(Point3::new(0.0,0.0,-1.0), 0.5));
+
     // Render
+    let mut img: RgbImage = ImageBuffer::new(IMAGE_WIDTH, IMAGE_HEIGHT);
+    let pb = ProgressBar::new(img.len().try_into().unwrap());
+    const MAX_DEPTH:i32 = 10;
 
-    let mut buffer : RgbImage = ImageBuffer::new(IMAGE_WIDTH, IMAGE_HEIGHT);
+    for (x,y,pixel) in img.enumerate_pixels_mut() {
 
-    for (x,y,pixel) in buffer.enumerate_pixels_mut() {
+        pb.inc(1);
 
-        let v = y as f64 / (IMAGE_HEIGHT as f64 +1.0);
-        let u = x as f64 / (IMAGE_WIDTH as f64+1.0);
-        let direction:Vec3 = lower_left_corner + horizontal*u + veritcal*v;
-        let ray:Ray = Ray::new(ORIGIN, direction);
-        
-        let ray_colour:Colour = ray.ray_colour(&world);
+        // Reverse y scanlines
+        let y = IMAGE_HEIGHT-y;
 
-        let ir = (ray_colour.x() * 255.999) as u8;
-        let ig = (ray_colour.y() * 255.999) as u8;
-        let ib = (ray_colour.z() * 255.999) as u8;
+        let mut pixel_colour = Colour::new(0.0,0.0,0.0);
 
-        *pixel = Rgb([ir, ig, ib]);
-        
+        for _n in 0..SAMPLES_PER_PIXEL as i32 {
+            let u = (x as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_WIDTH as f64 -1.0);
+            let v = (y as f64 + rng.gen_range(0.0..1.0)) / (IMAGE_HEIGHT as f64 -1.0);
+    
+            let ray = camera.get_ray(u, v);
+            pixel_colour += ray_color(&ray, &world, MAX_DEPTH);
+
+        }
+
+        let mut r = pixel_colour.x as f64; 
+        let mut g = pixel_colour.y as f64; 
+        let mut b = pixel_colour.z as f64; 
+
+        let scale = 1.0 / SAMPLES_PER_PIXEL;
+        r *= scale;
+        g *= scale;
+        b *= scale;
+
+        let ir = (255.999 * clamp(r, 0.0, 0.999)) as u8;
+        let ig  = (255.999 * clamp(g as f64, 0.0, 0.999)) as u8;
+        let ib  = (255.999 * clamp(b as f64, 0.0, 0.999)) as u8;
+
+        *pixel = Rgb([ir, ig, ib])
     }
 
-    buffer.save("image.png").unwrap();
+    img.save("image.png").unwrap();
 }
